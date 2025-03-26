@@ -11,7 +11,7 @@ API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 PORT = int(os.getenv("PORT", "8080"))
 HOST = os.getenv("HOST")
-LOG_CHANNEL = -100xxxxxxxxxx  # Replace with the correct private channel ID
+LOG_CHANNEL = -1002596681166  # Replace with the correct private channel ID
 
 # Initialize bot
 bot = Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
