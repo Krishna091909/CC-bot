@@ -11,7 +11,7 @@ API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 PORT = int(os.getenv("PORT", "8080"))
 HOST = os.getenv("HOST")
-LOG_CHANNEL = int(os.getenv("LOG_CHANNEL", 0))  # Convert to int
+LOG_CHANNEL = -100xxxxxxxxxx  # Replace with the correct private channel ID
 
 # Initialize bot
 bot = Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -19,34 +19,36 @@ bot = Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TO
 # Flask app for serving files
 app = Flask(__name__)
 
-file_store = {}  # Stores file IDs for quick access
+file_store = {}  # Stores file paths
 
 @bot.on_message(filters.private & filters.document)
 def receive_file(client, message):
     file_id = message.document.file_id
     file_name = message.document.file_name
-
-    # Forward file to log channel instantly
-    if LOG_CHANNEL:
+    
+    # Forward the file to the log channel
+    try:
         forwarded_message = message.forward(LOG_CHANNEL)
-        log_message_id = forwarded_message.message_id
-    else:
-        log_message_id = None
+    except Exception as e:
+        logging.error(f"Failed to forward message: {e}")
+        message.reply_text("❌ Failed to forward file. Check log channel ID and bot permissions.")
+        return
+    
+    # Download file
+    file_path = client.download_media(message)
+    file_store[file_id] = file_path
 
-    # Store file details
-    file_store[file_id] = log_message_id
-
-    # Generate fast access links using Telegram File ID
+    # Generate links
     file_link = f"{HOST}/download/{file_id}"
     stream_link = f"{HOST}/stream/{file_id}"
-
-    # Send instant response to user
+    
+    # Send response quickly
     message.reply_text(
-        f"**File Received & Forwarded!**\n\n📂 File Name: {file_name}\n🔗 [Download]({file_link}) | 🎥 [Stream]({stream_link})",
+        f"**File Uploaded Successfully!**\n\n📂 File Name: {file_name}\n🔗 [Download]({file_link}) | 🎥 [Stream]({stream_link})",
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("📥 Download", url=file_link)],
-                [InlineKeyboardButton("🎥 Stream", url=stream_link)]
+                [InlineKeyboardButton("⬇️ Download", url=file_link)],
+                [InlineKeyboardButton("▶️ Stream", url=stream_link)]
             ]
         ),
         disable_web_page_preview=True
@@ -54,14 +56,16 @@ def receive_file(client, message):
 
 @app.route("/download/<file_id>")
 def download_file(file_id):
-    if file_id in file_store:
-        return send_file(f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_id}", as_attachment=True)
+    file_path = file_store.get(file_id)
+    if file_path and os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True)
     return "File Not Found!", 404
 
 @app.route("/stream/<file_id>")
 def stream_file(file_id):
-    if file_id in file_store:
-        return send_file(f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_id}")
+    file_path = file_store.get(file_id)
+    if file_path and os.path.exists(file_path):
+        return send_file(file_path)
     return "File Not Found!", 404
 
 def run_flask():
