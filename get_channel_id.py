@@ -1,4 +1,4 @@
-from pyrogram import Client
+from pyrogram import Client, filters
 import os
 
 API_ID = int(os.getenv("API_ID"))
@@ -7,10 +7,10 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Client("GetIDBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-async def main():
-    async with bot:
-        async for dialog in bot.get_dialogs():
-            if dialog.chat.type == "channel":
-                print(f"Channel: {dialog.chat.title} | ID: {dialog.chat.id}")
+@bot.on_message(filters.channel)
+def get_channel_info(client, message):
+    chat_id = message.chat.id
+    chat_title = message.chat.title
+    print(f"Channel: {chat_title} | ID: {chat_id}")
 
-bot.run(main())
+bot.run()
