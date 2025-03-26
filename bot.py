@@ -9,9 +9,14 @@ import threading
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-LOG_CHANNEL = int(os.getenv("LOG_CHANNEL"))
 PORT = int(os.getenv("PORT", "8080"))
 HOST = os.getenv("HOST")
+
+LOG_CHANNEL = os.getenv("LOG_CHANNEL")
+if LOG_CHANNEL:
+    LOG_CHANNEL = int(LOG_CHANNEL)
+else:
+    LOG_CHANNEL = None  # Set to None explicitly
 
 # Initialize bot
 bot = Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -38,19 +43,25 @@ def receive_file(client, message):
         ),
         disable_web_page_preview=True
     )
-    client.send_message(LOG_CHANNEL, f"New file uploaded: {file_name}\n{file_link}\n{stream_link}")
+    try:
+        if LOG_CHANNEL:
+            client.send_message(LOG_CHANNEL, f"New file uploaded: {file_name}\n{file_link}\n{stream_link}")
+    except Exception as e:
+        logging.error(f"Failed to send log message: {e}")
 
 @app.route("/download/<file_id>")
 def download_file(file_id):
     if file_id in file_store:
-        file_path = bot.download_media(file_id)
+        with Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN) as temp_client:
+            file_path = temp_client.download_media(file_id)
         return send_file(file_path, as_attachment=True)
     return "File Not Found!", 404
 
 @app.route("/stream/<file_id>")
 def stream_file(file_id):
     if file_id in file_store:
-        file_path = bot.download_media(file_id)
+        with Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN) as temp_client:
+            file_path = temp_client.download_media(file_id)
         return send_file(file_path)
     return "File Not Found!", 404
 
