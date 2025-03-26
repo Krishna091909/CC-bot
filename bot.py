@@ -11,8 +11,8 @@ API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 PORT = int(os.getenv("PORT", "8080"))
 HOST = os.getenv("HOST")
-
 LOG_CHANNEL = os.getenv("LOG_CHANNEL")
+
 if LOG_CHANNEL:
     LOG_CHANNEL = int(LOG_CHANNEL)
 else:
@@ -24,15 +24,18 @@ bot = Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TO
 # Flask app for serving files
 app = Flask(__name__)
 
-file_store = {}
+file_store = {}  # Stores file paths
 
 @bot.on_message(filters.private & filters.document)
 def receive_file(client, message):
     file_id = message.document.file_id
     file_name = message.document.file_name
-    file_store[file_id] = file_name
+    file_path = client.download_media(message)  # Download file & store path
+    file_store[file_id] = file_path  # Store actual path
+    
     file_link = f"{HOST}/download/{file_id}"
     stream_link = f"{HOST}/stream/{file_id}"
+    
     message.reply_text(
         f"**File Uploaded Successfully!**\n\n📂 File Name: {file_name}\n🔗 [Download]({file_link}) | 🎥 [Stream]({stream_link})",
         reply_markup=InlineKeyboardMarkup(
@@ -51,17 +54,15 @@ def receive_file(client, message):
 
 @app.route("/download/<file_id>")
 def download_file(file_id):
-    if file_id in file_store:
-        with Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN) as temp_client:
-            file_path = temp_client.download_media(file_id)
+    file_path = file_store.get(file_id)
+    if file_path and os.path.exists(file_path):
         return send_file(file_path, as_attachment=True)
     return "File Not Found!", 404
 
 @app.route("/stream/<file_id>")
 def stream_file(file_id):
-    if file_id in file_store:
-        with Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN) as temp_client:
-            file_path = temp_client.download_media(file_id)
+    file_path = file_store.get(file_id)
+    if file_path and os.path.exists(file_path):
         return send_file(file_path)
     return "File Not Found!", 404
 
