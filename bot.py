@@ -6,12 +6,12 @@ from flask import Flask, send_file
 import threading
 
 # Load environment variables
-API_ID = int(os.getenv("API_ID", "26742257"))
-API_HASH = os.getenv("API_HASH", "625a7410153e4222aa34b82b9cff2554")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7834981923:AAGYbPxyd3UWjjrDzwTvVScs0aAlf8B0eHk")
-LOG_CHANNEL = int(os.getenv("LOG_CHANNEL", "-1002596681166"))
+API_ID = int(os.getenv("API_ID"))
+API_HASH = os.getenv("API_HASH")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+LOG_CHANNEL = int(os.getenv("LOG_CHANNEL"))
 PORT = int(os.getenv("PORT", "8080"))
-HOST = os.getenv("HOST", "https://cc-link.onrender.com")
+HOST = os.getenv("HOST")
 
 # Initialize bot
 bot = Client("FileStreamBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -32,7 +32,7 @@ def receive_file(client, message):
         f"**File Uploaded Successfully!**\n\n📂 File Name: {file_name}\n🔗 [Download]({file_link}) | 🎥 [Stream]({stream_link})",
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton("📥 Download", url=file_link)],
+                [InlineKeyboardButton("👅 Download", url=file_link)],
                 [InlineKeyboardButton("🎥 Stream", url=stream_link)]
             ]
         ),
